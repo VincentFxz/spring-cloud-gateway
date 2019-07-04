@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -31,8 +31,8 @@ import static org.springframework.boot.test.context.SpringBootTest.WebEnvironmen
 @RunWith(SpringRunner.class)
 // this test works because it assumes TLS hand shake cannot be done in 1ms. It takes
 // closer to 80ms
-@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {
-		"spring.cloud.gateway.httpclient.ssl.handshake-timeout=1ms" })
+@SpringBootTest(webEnvironment = RANDOM_PORT,
+		properties = { "spring.cloud.gateway.httpclient.ssl.handshake-timeout=1ms" })
 @DirtiesContext
 @ActiveProfiles("ssl")
 public class SSLHandshakeTimeoutTests extends SingleCertSSLTests {

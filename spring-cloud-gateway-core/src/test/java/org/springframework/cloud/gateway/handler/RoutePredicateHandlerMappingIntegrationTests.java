@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,7 +33,8 @@ import org.springframework.util.SocketUtils;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = RANDOM_PORT, properties = "management.server.port=${test.port}")
+@SpringBootTest(webEnvironment = RANDOM_PORT,
+		properties = "management.server.port=${test.port}")
 @DirtiesContext
 public class RoutePredicateHandlerMappingIntegrationTests extends BaseWebClientTests {
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -44,11 +44,11 @@ import static org.springframework.cloud.gateway.filter.factory.RewritePathGatewa
 import static org.springframework.cloud.gateway.handler.predicate.RoutePredicateFactory.PATTERN_KEY;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = DiscoveryClientRouteDefinitionLocatorTests.Config.class, properties = {
-		"spring.cloud.gateway.discovery.locator.enabled=true",
-		"spring.cloud.gateway.discovery.locator.route-id-prefix=testedge_",
-		"spring.cloud.gateway.discovery.locator.include-expression=metadata['edge'] == 'true'",
-		"spring.cloud.gateway.discovery.locator.lower-case-service-id=true"
+@SpringBootTest(classes = DiscoveryClientRouteDefinitionLocatorTests.Config.class,
+		properties = { "spring.cloud.gateway.discovery.locator.enabled=true",
+				"spring.cloud.gateway.discovery.locator.route-id-prefix=testedge_",
+				"spring.cloud.gateway.discovery.locator.include-expression=metadata['edge'] == 'true'",
+				"spring.cloud.gateway.discovery.locator.lower-case-service-id=true"
 		/*
 		 * "spring.cloud.gateway.discovery.locator.predicates[0].name=Path",
 		 * "spring.cloud.gateway.discovery.locator.predicates[0].args[pattern]='/'+serviceId.toLowerCase()+'/**'",
@@ -57,7 +57,7 @@ import static org.springframework.cloud.gateway.handler.predicate.RoutePredicate
 		 * ,
 		 * "spring.cloud.gateway.discovery.locator.filters[0].args[replacement]='/$\\\\{remaining}'",
 		 */
-})
+		})
 public class DiscoveryClientRouteDefinitionLocatorTests {
 
 	@Autowired(required = false)

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -81,6 +81,16 @@ public class PathRoutePredicateFactoryTests extends BaseWebClientTests {
 		expectPathRoute("/anything/multidsl2", "www.pathmultidsl.org",
 				"default_path_to_httpbin");
 		expectPathRoute("/anything/multidsl3", "www.pathmultidsl.org", "path_multi_dsl");
+	}
+
+	@Test
+	public void pathRouteWorksWithPercent() {
+		testClient.get().uri("/abc/123%/function")
+				.header(HttpHeaders.HOST, "www.path.org").exchange().expectStatus().isOk()
+				.expectHeader()
+				.valueEquals(HANDLER_MAPPER_HEADER,
+						RoutePredicateHandlerMapping.class.getSimpleName())
+				.expectHeader().valueEquals(ROUTE_ID_HEADER, "path_test");
 	}
 
 	@EnableAutoConfiguration

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -148,9 +147,11 @@ public class RouteDefinitionRouteLocator
 	}
 
 	@SuppressWarnings("unchecked")
-	private List<GatewayFilter> loadGatewayFilters(String id,
+	List<GatewayFilter> loadGatewayFilters(String id,
 			List<FilterDefinition> filterDefinitions) {
-		List<GatewayFilter> filters = filterDefinitions.stream().map(definition -> {
+		ArrayList<GatewayFilter> ordered = new ArrayList<>(filterDefinitions.size());
+		for (int i = 0; i < filterDefinitions.size(); i++) {
+			FilterDefinition definition = filterDefinitions.get(i);
 			GatewayFilterFactory factory = this.gatewayFilterFactories
 					.get(definition.getName());
 			if (factory == null) {
@@ -170,19 +171,12 @@ public class RouteDefinitionRouteLocator
 			Object configuration = factory.newConfig();
 
 			ConfigurationUtils.bind(configuration, properties,
-					factory.shortcutFieldPrefix(), definition.getName(), validator,
-					conversionService);
+					factory.shortcutFieldPrefix(), definition.getName(), validator);
 
 			GatewayFilter gatewayFilter = factory.apply(configuration);
 			if (this.publisher != null) {
 				this.publisher.publishEvent(new FilterArgsEvent(this, id, properties));
 			}
-			return gatewayFilter;
-		}).collect(Collectors.toList());
-
-		ArrayList<GatewayFilter> ordered = new ArrayList<>(filters.size());
-		for (int i = 0; i < filters.size(); i++) {
-			GatewayFilter gatewayFilter = filters.get(i);
 			if (gatewayFilter instanceof Ordered) {
 				ordered.add(gatewayFilter);
 			}

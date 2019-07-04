@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -39,6 +39,8 @@ import org.springframework.cloud.gateway.filter.factory.AbstractChangeRequestUri
 import org.springframework.cloud.gateway.filter.factory.AddRequestHeaderGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.AddRequestParameterGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.AddResponseHeaderGatewayFilterFactory;
+import org.springframework.cloud.gateway.filter.factory.DedupeResponseHeaderGatewayFilterFactory;
+import org.springframework.cloud.gateway.filter.factory.DedupeResponseHeaderGatewayFilterFactory.Strategy;
 import org.springframework.cloud.gateway.filter.factory.FallbackHeadersGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.HystrixGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.PrefixPathGatewayFilterFactory;
@@ -178,9 +180,21 @@ public class GatewayFilterSpec extends UriSpec {
 	}
 
 	/**
+	 * A filter that removes duplication on a response header before it is returned to the
+	 * client by the Gateway.
+	 * @param headerName the header name(s), space separated
+	 * @param strategy RETAIN_FIRST, RETAIN_LAST, or RETAIN_UNIQUE
+	 * @return a {@link GatewayFilterSpec} that can be used to apply additional filters
+	 */
+	public GatewayFilterSpec dedupeResponseHeader(String headerName, String strategy) {
+		return filter(getBean(DedupeResponseHeaderGatewayFilterFactory.class).apply(
+				c -> c.setStrategy(Strategy.valueOf(strategy)).setName(headerName)));
+	}
+
+	/**
 	 * Wraps the route in a Hystrix command. Depends on @{code
 	 * org.springframework.cloud::spring-cloud-starter-netflix-hystrix} being on the
-	 * classpath, {@see http://cloud.spring.io/spring-cloud-netflix/}
+	 * classpath, {@see https://cloud.spring.io/spring-cloud-netflix/}
 	 * @param configConsumer a {@link Consumer} which provides configuration for the
 	 * Hystrix command
 	 * @return a {@link GatewayFilterSpec} that can be used to apply additional filters
@@ -234,6 +248,29 @@ public class GatewayFilterSpec extends UriSpec {
 	}
 
 	/**
+	 * A filter that can be used to modify the request body. This filter is BETA and may
+	 * be subject to change in a future release.
+	 * @param configConsumer request spec for response modification
+	 * @return a {@link GatewayFilterSpec} that can be used to apply additional filters
+	 * <pre>
+	 * {@code
+	 * ...
+	 * .modifyRequestBody(c -> c
+	 *		.setInClass(Some.class)
+	 *		.setOutClass(SomeOther.class)
+	 *		.setInHints(hintsIn)
+	 *		.setOutHints(hintsOut)
+	 *		.setRewriteFunction(rewriteFunction))
+	 * }
+	 * </pre>
+	 */
+	public <T, R> GatewayFilterSpec modifyRequestBody(
+			Consumer<ModifyRequestBodyGatewayFilterFactory.Config> configConsumer) {
+		return filter(getBean(ModifyRequestBodyGatewayFilterFactory.class)
+				.apply(configConsumer));
+	}
+
+	/**
 	 * A filter that can be used to modify the response body This filter is BETA and may
 	 * be subject to change in a future release.
 	 * @param inClass the class to conver the response body to
@@ -271,6 +308,28 @@ public class GatewayFilterSpec extends UriSpec {
 		return filter(getBean(ModifyResponseBodyGatewayFilterFactory.class)
 				.apply(c -> c.setRewriteFunction(inClass, outClass, rewriteFunction)
 						.setNewContentType(newContentType)));
+	}
+
+	/**
+	 * A filter that can be used to modify the response body using custom spec. This
+	 * filter is BETA and may be subject to change in a future release.
+	 * @param configConsumer response spec for response modification
+	 * @return a {@link GatewayFilterSpec} that can be used to apply additional filters
+	 * <pre>
+	 * {@code
+	 * ...
+	 * .modifyResponseBody(c -> c
+	 *		.setInClass(Some.class)
+	 *		.setOutClass(SomeOther.class)
+	 *		.setOutHints(hintsOut)
+	 *		.setRewriteFunction(rewriteFunction))
+	 * }
+	 * </pre>
+	 */
+	public <T, R> GatewayFilterSpec modifyResponseBody(
+			Consumer<ModifyResponseBodyGatewayFilterFactory.Config> configConsumer) {
+		return filter(getBean(ModifyResponseBodyGatewayFilterFactory.class)
+				.apply(configConsumer));
 	}
 
 	/**
@@ -415,8 +474,9 @@ public class GatewayFilterSpec extends UriSpec {
 	 * @return a {@link GatewayFilterSpec} that can be used to apply additional filters
 	 */
 	public GatewayFilterSpec retry(int retries) {
-		return filter(getBean(RetryGatewayFilterFactory.class)
-				.apply(retryConfig -> retryConfig.setRetries(retries)));
+		return filter(
+				getBean(RetryGatewayFilterFactory.class).apply(this.routeBuilder.getId(),
+						retryConfig -> retryConfig.setRetries(retries)));
 	}
 
 	/**
@@ -428,7 +488,8 @@ public class GatewayFilterSpec extends UriSpec {
 	 */
 	public GatewayFilterSpec retry(
 			Consumer<RetryGatewayFilterFactory.RetryConfig> retryConsumer) {
-		return filter(getBean(RetryGatewayFilterFactory.class).apply(retryConsumer));
+		return filter(getBean(RetryGatewayFilterFactory.class)
+				.apply(this.routeBuilder.getId(), retryConsumer));
 	}
 
 	/**
@@ -439,7 +500,9 @@ public class GatewayFilterSpec extends UriSpec {
 	 */
 	public GatewayFilterSpec retry(Repeat<ServerWebExchange> repeat,
 			Retry<ServerWebExchange> retry) {
-		return filter(getBean(RetryGatewayFilterFactory.class).apply(repeat, retry));
+		RetryGatewayFilterFactory filterFactory = getBean(
+				RetryGatewayFilterFactory.class);
+		return filter(filterFactory.apply(this.routeBuilder.getId(), repeat, retry));
 	}
 
 	/**
@@ -536,10 +599,10 @@ public class GatewayFilterSpec extends UriSpec {
 	/**
 	 * A filter which forces a {@code WebSession::save} operation before forwarding the
 	 * call downstream. This is of particular use when using something like
-	 * <a href="http://projects.spring.io/spring-session/">Spring Session</a> with a lazy
+	 * <a href="https://projects.spring.io/spring-session/">Spring Session</a> with a lazy
 	 * data store and need to ensure the session state has been saved before making the
 	 * forwarded call. If you are integrating
-	 * <a href="http://projects.spring.io/spring-security/">Spring Security</a> with
+	 * <a href="https://projects.spring.io/spring-security/">Spring Security</a> with
 	 * Spring Session, and want to ensure security details have been forwarded to the
 	 * remote process, this is critical.
 	 * @return a {@link GatewayFilterSpec} that can be used to apply additional filters
@@ -603,7 +666,7 @@ public class GatewayFilterSpec extends UriSpec {
 	/**
 	 * Adds hystrix execution exception headers to fallback request. Depends on @{code
 	 * org.springframework.cloud::spring-cloud-starter-netflix-hystrix} being on the
-	 * classpath, {@see http://cloud.spring.io/spring-cloud-netflix/}
+	 * classpath, {@see https://cloud.spring.io/spring-cloud-netflix/}
 	 * @param config a {@link FallbackHeadersGatewayFilterFactory.Config} which provides
 	 * the header names. If header names arguments are not provided, default values are
 	 * used.
@@ -618,7 +681,7 @@ public class GatewayFilterSpec extends UriSpec {
 	/**
 	 * Adds hystrix execution exception headers to fallback request. Depends on @{code
 	 * org.springframework.cloud::spring-cloud-starter-netflix-hystrix} being on the
-	 * classpath, {@see http://cloud.spring.io/spring-cloud-netflix/}
+	 * classpath, {@see https://cloud.spring.io/spring-cloud-netflix/}
 	 * @param configConsumer a {@link Consumer} which can be used to set up the names of
 	 * the headers in the config. If header names arguments are not provided, default
 	 * values are used.

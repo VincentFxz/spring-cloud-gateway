@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 import org.junit.runners.model.Statement;
+
+import org.springframework.cloud.gateway.filter.GatewayMetricsFilterTests;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -93,7 +95,7 @@ import static org.junit.Assume.assumeThat;
 		org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiterTests.class,
 		org.springframework.cloud.gateway.filter.LoadBalancerClientFilterTests.class,
 		org.springframework.cloud.gateway.filter.NettyRoutingFilterIntegrationTests.class,
-		org.springframework.cloud.gateway.filter.GatewayMetricFilterTests.class,
+		GatewayMetricsFilterTests.class,
 		org.springframework.cloud.gateway.filter.ForwardRoutingFilterTests.class,
 		org.springframework.cloud.gateway.route.RouteDefinitionRouteLocatorTests.class,
 		org.springframework.cloud.gateway.route.RouteTests.class,

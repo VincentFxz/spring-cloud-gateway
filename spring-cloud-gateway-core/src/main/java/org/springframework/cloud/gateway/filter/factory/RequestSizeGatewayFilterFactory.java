@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -66,9 +66,11 @@ public class RequestSizeGatewayFilterFactory extends
 				Long currentRequestSize = Long.valueOf(contentLength);
 				if (currentRequestSize > requestSizeConfig.getMaxSize()) {
 					exchange.getResponse().setStatusCode(HttpStatus.PAYLOAD_TOO_LARGE);
-					exchange.getResponse().getHeaders().add("errorMessage",
-							getErrorMessage(currentRequestSize,
-									requestSizeConfig.getMaxSize()));
+					if (!exchange.getResponse().isCommitted()) {
+						exchange.getResponse().getHeaders().add("errorMessage",
+								getErrorMessage(currentRequestSize,
+										requestSizeConfig.getMaxSize()));
+					}
 					return exchange.getResponse().setComplete();
 				}
 			}

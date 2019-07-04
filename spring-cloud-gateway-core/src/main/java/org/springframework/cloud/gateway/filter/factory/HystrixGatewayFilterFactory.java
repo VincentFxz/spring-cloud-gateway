@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -53,7 +53,7 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.c
 
 /**
  * Depends on `spring-cloud-starter-netflix-hystrix`,
- * {@see http://cloud.spring.io/spring-cloud-netflix/}.
+ * {@see https://cloud.spring.io/spring-cloud-netflix/}.
  *
  * @author Spencer Gibb
  * @author Michele Mancioppi
@@ -86,6 +86,8 @@ public class HystrixGatewayFilterFactory
 		return singletonList(NAME_KEY);
 	}
 
+	@Override
+	// TODO: make Config implement HasRouteId and remove this method.
 	public GatewayFilter apply(String routeId, Consumer<Config> consumer) {
 		Config config = newConfig();
 		consumer.accept(config);
@@ -95,6 +97,17 @@ public class HystrixGatewayFilterFactory
 		}
 
 		return apply(config);
+	}
+
+	/**
+	 * Create a {@link Setter} based on incoming request attribute. <br>
+	 * This could be useful for example to create a Setter with {@link HystrixCommandKey}
+	 * being set as the target service's host:port, as obtained from
+	 * {@link ServerWebExchange#getRequest()} to do per service instance level circuit
+	 * breaking.
+	 */
+	protected Setter createCommandSetter(Config config, ServerWebExchange exchange) {
+		return config.setter;
 	}
 
 	@Override
@@ -112,8 +125,9 @@ public class HystrixGatewayFilterFactory
 		}
 
 		return (exchange, chain) -> {
-			RouteHystrixCommand command = new RouteHystrixCommand(config.setter,
-					config.fallbackUri, exchange, chain);
+			RouteHystrixCommand command = new RouteHystrixCommand(
+					createCommandSetter(config, exchange), config.fallbackUri, exchange,
+					chain);
 
 			return Mono.create(s -> {
 				Subscription sub = command.toObservable().subscribe(s::success, s::error,
@@ -227,7 +241,7 @@ public class HystrixGatewayFilterFactory
 			// TODO: assume always?
 			boolean encoded = containsEncodedParts(uri);
 			URI requestUrl = UriComponentsBuilder.fromUri(uri).host(null).port(null)
-					.uri(this.fallbackUri).build(encoded).toUri();
+					.uri(this.fallbackUri).scheme(null).build(encoded).toUri();
 			exchange.getAttributes().put(GATEWAY_REQUEST_URL_ATTR, requestUrl);
 			addExceptionDetails();
 

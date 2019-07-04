@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,6 +29,7 @@ import org.springframework.boot.autoconfigure.web.reactive.WebFluxAutoConfigurat
 import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.web.filter.reactive.HiddenHttpMethodFilter;
+import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,7 +38,8 @@ public class GatewayAutoConfigurationTests {
 	@Test
 	public void noHiddenHttpMethodFilter() {
 		try (ConfigurableApplicationContext ctx = SpringApplication.run(
-				NoHiddenHttpMethodFilterConfig.class, "--spring.jmx.enabled=false")) {
+				NoHiddenHttpMethodFilterConfig.class, "--spring.jmx.enabled=false",
+				"--server.port=0")) {
 			assertThat(ctx.getEnvironment()
 					.getProperty("spring.webflux.hiddenmethod.filter.enabled"))
 							.isEqualTo("false");
@@ -54,6 +56,7 @@ public class GatewayAutoConfigurationTests {
 						GatewayAutoConfiguration.class))
 				.withPropertyValues("debug=true").run(context -> {
 					assertThat(context).hasSingleBean(HttpClient.class);
+					assertThat(context).hasBean("gatewayHttpClient");
 					HttpClient httpClient = context.getBean(HttpClient.class);
 					/*
 					 * FIXME: 2.1.0 HttpClientOptions options = httpClient.options();
@@ -83,7 +86,8 @@ public class GatewayAutoConfigurationTests {
 						"spring.cloud.gateway.httpclient.connect-timeout=10",
 						"spring.cloud.gateway.httpclient.response-timeout=10s",
 						"spring.cloud.gateway.httpclient.pool.type=fixed",
-						"spring.cloud.gateway.httpclient.proxy.host=myhost")
+						"spring.cloud.gateway.httpclient.proxy.host=myhost",
+						"spring.cloud.gateway.httpclient.websocket.max-frame-payload-length=1024")
 				.run(context -> {
 					assertThat(context).hasSingleBean(HttpClient.class);
 					HttpClient httpClient = context.getBean(HttpClient.class);
@@ -103,6 +107,11 @@ public class GatewayAutoConfigurationTests {
 					 * assertThat(sslContext).isNotNull();
 					 */
 					// TODO: howto test SslContext
+					assertThat(context).hasSingleBean(ReactorNettyWebSocketClient.class);
+					ReactorNettyWebSocketClient webSocketClient = context
+							.getBean(ReactorNettyWebSocketClient.class);
+					assertThat(webSocketClient.getMaxFramePayloadLength())
+							.isEqualTo(1024);
 				});
 	}
 

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,8 @@ import java.util.List;
 
 import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.NettyPipeline;
@@ -58,6 +60,8 @@ import static org.springframework.cloud.gateway.support.ServerWebExchangeUtils.s
  * @author Biju Kunjummen
  */
 public class NettyRoutingFilter implements GlobalFilter, Ordered {
+
+	private static final Log log = LogFactory.getLog(NettyRoutingFilter.class);
 
 	private final HttpClient httpClient;
 
@@ -103,22 +107,17 @@ public class NettyRoutingFilter implements GlobalFilter, Ordered {
 		ServerHttpRequest request = exchange.getRequest();
 
 		final HttpMethod method = HttpMethod.valueOf(request.getMethodValue());
-		final String url = requestUrl.toString();
+		final String url = requestUrl.toASCIIString();
 
 		HttpHeaders filtered = filterRequest(getHeadersFilters(), exchange);
 
 		final DefaultHttpHeaders httpHeaders = new DefaultHttpHeaders();
 		filtered.forEach(httpHeaders::set);
 
-		String transferEncoding = request.getHeaders()
-				.getFirst(HttpHeaders.TRANSFER_ENCODING);
-		boolean chunkedTransfer = "chunked".equalsIgnoreCase(transferEncoding);
-
 		boolean preserveHost = exchange
 				.getAttributeOrDefault(PRESERVE_HOST_HEADER_ATTRIBUTE, false);
 
-		Flux<HttpClientResponse> responseFlux = this.httpClient
-				.chunkedTransfer(chunkedTransfer).request(method).uri(url)
+		Flux<HttpClientResponse> responseFlux = this.httpClient.request(method).uri(url)
 				.send((req, nettyOutbound) -> {
 					req.headers(httpHeaders);
 
@@ -126,11 +125,24 @@ public class NettyRoutingFilter implements GlobalFilter, Ordered {
 						String host = request.getHeaders().getFirst(HttpHeaders.HOST);
 						req.header(HttpHeaders.HOST, host);
 					}
+					if (log.isTraceEnabled()) {
+						nettyOutbound
+								.withConnection(connection -> log.trace("outbound route: "
+										+ connection.channel().id().asShortText()
+										+ ", inbound: " + exchange.getLogPrefix()));
+					}
 					return nettyOutbound.options(NettyPipeline.SendOptions::flushOnEach)
 							.send(request.getBody()
 									.map(dataBuffer -> ((NettyDataBuffer) dataBuffer)
 											.getNativeBuffer()));
 				}).responseConnection((res, connection) -> {
+
+					// Defer committing the response until all route filters have run
+					// Put client response as ServerWebExchange attribute and write
+					// response later NettyWriteResponseFilter
+					exchange.getAttributes().put(CLIENT_RESPONSE_ATTR, res);
+					exchange.getAttributes().put(CLIENT_RESPONSE_CONN_ATTR, connection);
+
 					ServerHttpResponse response = exchange.getResponse();
 					// put headers and status so filters can modify the response
 					HttpHeaders headers = new HttpHeaders();
@@ -154,6 +166,7 @@ public class NettyRoutingFilter implements GlobalFilter, Ordered {
 								.setStatusCodeValue(res.status().code());
 					}
 					else {
+						// TODO: log warning here, not throw error?
 						throw new IllegalStateException(
 								"Unable to set status code on response: "
 										+ res.status().code() + ", "
@@ -180,12 +193,6 @@ public class NettyRoutingFilter implements GlobalFilter, Ordered {
 							filteredResponseHeaders.keySet());
 
 					response.getHeaders().putAll(filteredResponseHeaders);
-
-					// Defer committing the response until all route filters have run
-					// Put client response as ServerWebExchange attribute and write
-					// response later NettyWriteResponseFilter
-					exchange.getAttributes().put(CLIENT_RESPONSE_ATTR, res);
-					exchange.getAttributes().put(CLIENT_RESPONSE_CONN_ATTR, connection);
 
 					return Mono.just(res);
 				});

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -57,6 +57,9 @@ public class HttpClientProperties {
 	/** SSL configuration for Netty HttpClient. */
 	private Ssl ssl = new Ssl();
 
+	/** Websocket configuration for Netty HttpClient. */
+	private Websocket websocket = new Websocket();
+
 	public Integer getConnectTimeout() {
 		return connectTimeout;
 	}
@@ -97,11 +100,27 @@ public class HttpClientProperties {
 		this.ssl = ssl;
 	}
 
+	public Websocket getWebsocket() {
+		return this.websocket;
+	}
+
+	public void setWebsocket(Websocket websocket) {
+		this.websocket = websocket;
+	}
+
 	@Override
 	public String toString() {
-		return new ToStringCreator(this).append("connectTimeout", connectTimeout)
-				.append("responseTimeout", responseTimeout).append("pool", pool)
-				.append("proxy", proxy).append("ssl", ssl).toString();
+		// @formatter:off
+		return new ToStringCreator(this)
+				.append("connectTimeout", connectTimeout)
+				.append("responseTimeout", responseTimeout)
+				.append("pool", pool)
+				.append("proxy", proxy)
+				.append("ssl", ssl)
+				.append("websocket", websocket)
+				.toString();
+		// @formatter:on
+
 	}
 
 	public static class Pool {
@@ -341,7 +360,8 @@ public class HttpClientProperties {
 			this.closeNotifyReadTimeout = closeNotifyReadTimeout;
 		}
 
-		@DeprecatedConfigurationProperty(replacement = "spring.cloud.gateway.httpclient.ssl.handshake-timeout")
+		@DeprecatedConfigurationProperty(
+				replacement = "spring.cloud.gateway.httpclient.ssl.handshake-timeout")
 		@Deprecated
 		public long getHandshakeTimeoutMillis() {
 			return getHandshakeTimeout().toMillis();
@@ -352,7 +372,8 @@ public class HttpClientProperties {
 			setHandshakeTimeout(Duration.ofMillis(handshakeTimeoutMillis));
 		}
 
-		@DeprecatedConfigurationProperty(replacement = "spring.cloud.gateway.httpclient.ssl.close-notify-flush-timeout")
+		@DeprecatedConfigurationProperty(
+				replacement = "spring.cloud.gateway.httpclient.ssl.close-notify-flush-timeout")
 		@Deprecated
 		public long getCloseNotifyFlushTimeoutMillis() {
 			return getCloseNotifyFlushTimeout().toMillis();
@@ -363,7 +384,8 @@ public class HttpClientProperties {
 			setCloseNotifyFlushTimeout(Duration.ofMillis(closeNotifyFlushTimeoutMillis));
 		}
 
-		@DeprecatedConfigurationProperty(replacement = "spring.cloud.gateway.httpclient.ssl.close-notify-read-timeout")
+		@DeprecatedConfigurationProperty(
+				replacement = "spring.cloud.gateway.httpclient.ssl.close-notify-read-timeout")
 		@Deprecated
 		public long getCloseNotifyReadTimeoutMillis() {
 			return getCloseNotifyReadTimeout().toMillis();
@@ -393,6 +415,27 @@ public class HttpClientProperties {
 					.append("closeNotifyReadTimeout", closeNotifyReadTimeout)
 					.append("defaultConfigurationType", defaultConfigurationType)
 					.toString();
+		}
+
+	}
+
+	public class Websocket {
+
+		/** Max frame payload length. */
+		private Integer maxFramePayloadLength;
+
+		public Integer getMaxFramePayloadLength() {
+			return this.maxFramePayloadLength;
+		}
+
+		public void setMaxFramePayloadLength(Integer maxFramePayloadLength) {
+			this.maxFramePayloadLength = maxFramePayloadLength;
+		}
+
+		@Override
+		public String toString() {
+			return new ToStringCreator(this)
+					.append("maxFramePayloadLength", maxFramePayloadLength).toString();
 		}
 
 	}

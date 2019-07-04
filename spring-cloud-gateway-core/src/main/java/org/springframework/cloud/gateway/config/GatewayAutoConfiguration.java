@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -50,12 +50,14 @@ import org.springframework.cloud.gateway.filter.ForwardRoutingFilter;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.cloud.gateway.filter.NettyRoutingFilter;
 import org.springframework.cloud.gateway.filter.NettyWriteResponseFilter;
+import org.springframework.cloud.gateway.filter.RemoveCachedBodyFilter;
 import org.springframework.cloud.gateway.filter.RouteToRequestUrlFilter;
 import org.springframework.cloud.gateway.filter.WebsocketRoutingFilter;
 import org.springframework.cloud.gateway.filter.WeightCalculatorWebFilter;
 import org.springframework.cloud.gateway.filter.factory.AddRequestHeaderGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.AddRequestParameterGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.AddResponseHeaderGatewayFilterFactory;
+import org.springframework.cloud.gateway.filter.factory.DedupeResponseHeaderGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.FallbackHeadersGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.GatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.HystrixGatewayFilterFactory;
@@ -123,7 +125,6 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.env.Environment;
-import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.Validator;
 import org.springframework.web.reactive.DispatcherHandler;
@@ -235,7 +236,8 @@ public class GatewayAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnProperty(name = "spring.cloud.gateway.forwarded.enabled", matchIfMissing = true)
+	@ConditionalOnProperty(name = "spring.cloud.gateway.forwarded.enabled",
+			matchIfMissing = true)
 	public ForwardedHeadersFilter forwardedHeadersFilter() {
 		return new ForwardedHeadersFilter();
 	}
@@ -248,7 +250,8 @@ public class GatewayAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnProperty(name = "spring.cloud.gateway.x-forwarded.enabled", matchIfMissing = true)
+	@ConditionalOnProperty(name = "spring.cloud.gateway.x-forwarded.enabled",
+			matchIfMissing = true)
 	public XForwardedHeadersFilter xForwardedHeadersFilter() {
 		return new XForwardedHeadersFilter();
 	}
@@ -258,6 +261,11 @@ public class GatewayAutoConfiguration {
 	@Bean
 	public AdaptCachedBodyGlobalFilter adaptCachedBodyGlobalFilter() {
 		return new AdaptCachedBodyGlobalFilter();
+	}
+
+	@Bean
+	public RemoveCachedBodyFilter removeCachedBodyFilter() {
+		return new RemoveCachedBodyFilter();
 	}
 
 	@Bean
@@ -390,15 +398,18 @@ public class GatewayAutoConfiguration {
 	}
 
 	@Bean
-	public ModifyRequestBodyGatewayFilterFactory modifyRequestBodyGatewayFilterFactory(
-			ServerCodecConfigurer codecConfigurer) {
-		return new ModifyRequestBodyGatewayFilterFactory(codecConfigurer);
+	public ModifyRequestBodyGatewayFilterFactory modifyRequestBodyGatewayFilterFactory() {
+		return new ModifyRequestBodyGatewayFilterFactory();
 	}
 
 	@Bean
-	public ModifyResponseBodyGatewayFilterFactory modifyResponseBodyGatewayFilterFactory(
-			ServerCodecConfigurer codecConfigurer) {
-		return new ModifyResponseBodyGatewayFilterFactory(codecConfigurer);
+	public DedupeResponseHeaderGatewayFilterFactory dedupeResponseHeaderGatewayFilterFactory() {
+		return new DedupeResponseHeaderGatewayFilterFactory();
+	}
+
+	@Bean
+	public ModifyResponseBodyGatewayFilterFactory modifyResponseBodyGatewayFilterFactory() {
+		return new ModifyResponseBodyGatewayFilterFactory();
 	}
 
 	@Bean
@@ -507,7 +518,7 @@ public class GatewayAutoConfiguration {
 
 		@Bean
 		@ConditionalOnMissingBean
-		public HttpClient httpClient(HttpClientProperties properties) {
+		public HttpClient gatewayHttpClient(HttpClientProperties properties) {
 
 			// configure pool resources
 			HttpClientProperties.Pool pool = properties.getPool();
@@ -582,6 +593,9 @@ public class GatewayAutoConfiguration {
 				});
 			}
 
+			// TODO: add configuration to turn on wiretap
+			// httpClient = httpClient.wiretap(true);
+
 			return httpClient;
 		}
 
@@ -605,8 +619,14 @@ public class GatewayAutoConfiguration {
 
 		@Bean
 		public ReactorNettyWebSocketClient reactorNettyWebSocketClient(
-				HttpClient httpClient) {
-			return new ReactorNettyWebSocketClient(httpClient);
+				HttpClientProperties properties, HttpClient httpClient) {
+			ReactorNettyWebSocketClient webSocketClient = new ReactorNettyWebSocketClient(
+					httpClient);
+			if (properties.getWebsocket().getMaxFramePayloadLength() != null) {
+				webSocketClient.setMaxFramePayloadLength(
+						properties.getWebsocket().getMaxFramePayloadLength());
+			}
+			return webSocketClient;
 		}
 
 	}

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -228,14 +228,23 @@ public class ProxyExchange<T> {
 	 * @param uri the backend uri to send the request to
 	 * @return this for convenience
 	 */
+	public ProxyExchange<T> uri(URI uri) {
+		this.uri = uri;
+		return this;
+	}
+
+	/**
+	 * Sets the uri for the backend call when triggered by the HTTP methods.
+	 * @param uri the backend uri to send the request to
+	 * @return this for convenience
+	 */
 	public ProxyExchange<T> uri(String uri) {
 		try {
-			this.uri = new URI(uri);
+			return this.uri(new URI(uri));
 		}
 		catch (URISyntaxException e) {
 			throw new IllegalStateException("Cannot create URI", e);
 		}
-		return this;
 	}
 
 	public String path() {

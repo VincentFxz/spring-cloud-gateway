@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,7 +37,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.validation.Validator;
 import org.springframework.validation.annotation.Validated;
@@ -92,7 +92,7 @@ public class RedisRateLimiter extends AbstractRateLimiter<RedisRateLimiter.Confi
 
 	private Log log = LogFactory.getLog(getClass());
 
-	private ReactiveRedisTemplate<String, String> redisTemplate;
+	private ReactiveStringRedisTemplate redisTemplate;
 
 	private RedisScript<List<Long>> script;
 
@@ -119,7 +119,7 @@ public class RedisRateLimiter extends AbstractRateLimiter<RedisRateLimiter.Confi
 	/** The name of the header that returns the burst capacity configuration. */
 	private String burstCapacityHeader = BURST_CAPACITY_HEADER;
 
-	public RedisRateLimiter(ReactiveRedisTemplate<String, String> redisTemplate,
+	public RedisRateLimiter(ReactiveStringRedisTemplate redisTemplate,
 			RedisScript<List<Long>> script, Validator validator) {
 		super(Config.class, CONFIGURATION_PROPERTY_NAME, validator);
 		this.redisTemplate = redisTemplate;
@@ -182,8 +182,9 @@ public class RedisRateLimiter extends AbstractRateLimiter<RedisRateLimiter.Confi
 	@SuppressWarnings("unchecked")
 	public void setApplicationContext(ApplicationContext context) throws BeansException {
 		if (initialized.compareAndSet(false, true)) {
-			this.redisTemplate = context.getBean("stringReactiveRedisTemplate",
-					ReactiveRedisTemplate.class);
+			if (this.redisTemplate == null) {
+				this.redisTemplate = context.getBean(ReactiveStringRedisTemplate.class);
+			}
 			this.script = context.getBean(REDIS_SCRIPT_NAME, RedisScript.class);
 			if (context.getBeanNamesForType(Validator.class).length > 0) {
 				this.setValidator(context.getBean(Validator.class));

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -80,7 +80,8 @@ public class ReadBodyPredicateFactoryTest {
 	@SpringBootConfiguration
 	@RibbonClients({
 			@RibbonClient(name = "message", configuration = TestRibbonConfig.class),
-			@RibbonClient(name = "messageChannel", configuration = TestRibbonConfig.class) })
+			@RibbonClient(name = "messageChannel",
+					configuration = TestRibbonConfig.class) })
 	@Import(PermitAllSecurityConfiguration.class)
 	@RestController
 	public static class TestConfig {
@@ -103,12 +104,14 @@ public class ReadBodyPredicateFactoryTest {
 			return r -> r.getFoo().equals(type);
 		}
 
-		@PostMapping(path = "message/events", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+		@PostMapping(path = "message/events",
+				produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 		public String messageEvents(@RequestBody Event e) {
 			return "{\"headers\":{\"Hello\":\"World\"}}";
 		}
 
-		@PostMapping(path = "messageChannel/events", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
+		@PostMapping(path = "messageChannel/events",
+				produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 		public String messageChannelEvents(@RequestBody Event e) {
 			return "{\"headers\":{\"World\":\"Hello\"}}";
 		}
@@ -127,36 +130,36 @@ public class ReadBodyPredicateFactoryTest {
 
 	}
 
-}
+	static class Event {
 
-class Event {
+		private String foo;
 
-	private String foo;
+		private String bar;
 
-	private String bar;
+		Event() {
+		}
 
-	Event() {
-	}
+		Event(String foo, String bar) {
+			this.foo = foo;
+			this.bar = bar;
+		}
 
-	Event(String foo, String bar) {
-		this.foo = foo;
-		this.bar = bar;
-	}
+		public String getFoo() {
+			return foo;
+		}
 
-	public String getFoo() {
-		return foo;
-	}
+		public void setFoo(String foo) {
+			this.foo = foo;
+		}
 
-	public void setFoo(String foo) {
-		this.foo = foo;
-	}
+		public String getBar() {
+			return bar;
+		}
 
-	public String getBar() {
-		return bar;
-	}
+		public void setBar(String bar) {
+			this.bar = bar;
+		}
 
-	public void setBar(String bar) {
-		this.bar = bar;
 	}
 
 }
